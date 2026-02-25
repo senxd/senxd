@@ -1,0 +1,26 @@
+name: Update AI Switch Counter
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-counter:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update counter
+        run: |
+          SWITCH_DATE=$(grep -oP '(?<=SWITCH_DATE:)\d{4}-\d{2}-\d{2}' README.md)
+          DAYS=$(( ($(date +%s) - $(date -d "$SWITCH_DATE" +%s)) / 86400 ))
+          sed -i "s/DAYS SINCE LAST AI SWITCH: [0-9]*/DAYS SINCE LAST AI SWITCH: $DAYS/" README.md
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet README.md || (git add README.md && git commit -m "Update AI switch counter" && git push)
